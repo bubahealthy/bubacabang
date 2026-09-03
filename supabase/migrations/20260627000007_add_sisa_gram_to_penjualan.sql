@@ -1,0 +1,1 @@
+ALTER TABLE penjualan ADD COLUMN IF NOT EXISTS sisa_gram integer DEFAULT NULL;
