@@ -395,7 +395,7 @@ function generateInsertSql(table: string, rows: any[]): string {
     lines.push(
       "INSERT INTO public." + table + " (" + columns.map((c) => '"' + c + '"').join(", ") + ") VALUES"
     );
-    lines.push(valueStrings.join(",\n") + ";");
+    lines.push(valueStrings.join(",\n") + " ON CONFLICT DO NOTHING;");
     lines.push("");
   }
 
@@ -451,7 +451,11 @@ async function main() {
     dataLines.push("-- =============================================================================");
     dataLines.push("");
     dataLines.push("-- ⚠️  Run schema.sql FIRST before running this file.");
-    dataLines.push("-- ⚠️  This file will TRUNCATE existing data before inserting.");
+    dataLines.push(
+      withTruncate
+        ? "-- ⚠️  This file will TRUNCATE existing data before inserting."
+        : "-- This file keeps existing rows and skips duplicate primary keys."
+    );
     dataLines.push("");
     dataLines.push("BEGIN;");
     dataLines.push("");
