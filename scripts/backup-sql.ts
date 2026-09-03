@@ -15,11 +15,7 @@ import path from "path";
 
 // ── Parse .env ──────────────────────────────────────────────
 const envPath = path.resolve(process.cwd(), ".env");
-if (!fs.existsSync(envPath)) {
-  console.error("❌ File .env tidak ditemukan");
-  process.exit(1);
-}
-const envContent = fs.readFileSync(envPath, "utf-8");
+const envContent = fs.existsSync(envPath) ? fs.readFileSync(envPath, "utf-8") : "";
 const env: Record<string, string> = {};
 envContent.split(/\r?\n/).forEach((line) => {
   const match = /^\s*([\w.-]+)\s*=\s*(.*)?\s*$/.exec(line);
@@ -30,6 +26,7 @@ envContent.split(/\r?\n/).forEach((line) => {
     env[match[1]] = value;
   }
 });
+Object.assign(env, process.env);
 
 const supabaseUrl = env["VITE_SUPABASE_URL"];
 const supabaseKey = env["VITE_SUPABASE_SERVICE_ROLE_KEY"] || env["VITE_SUPABASE_ANON_KEY"];
@@ -67,6 +64,7 @@ let backupName = "";
 let tableFilter: string[] | null = null;
 let schemaOnly = false;
 let dataOnly = false;
+let withTruncate = false;
 
 for (let i = 0; i < args.length; i++) {
   if (args[i] === "--name" && args[i + 1]) {
@@ -80,6 +78,9 @@ for (let i = 0; i < args.length; i++) {
   }
   if (args[i] === "--data-only") {
     dataOnly = true;
+  }
+  if (args[i] === "--with-truncate") {
+    withTruncate = true;
   }
 }
 
@@ -379,7 +380,9 @@ function generateInsertSql(table: string, rows: any[]): string {
   const lines: string[] = [];
 
   lines.push("-- " + table + " (" + rows.length + " rows)");
-  lines.push("TRUNCATE TABLE public." + table + " CASCADE;");
+  if (withTruncate) {
+    lines.push("TRUNCATE TABLE public." + table + " CASCADE;");
+  }
 
   const BATCH_SIZE = 100;
   for (let i = 0; i < rows.length; i += BATCH_SIZE) {
